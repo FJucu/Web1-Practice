@@ -1,99 +1,131 @@
 const e = React.createElement;
 
 function App() {
-    const initialClubs = [
-        { id: 1, name: 'Vasas FC' },
-        { id: 2, name: 'Ferencvárosi TC' },
-        { id: 3, name: 'Puskás Akadémia FC' },
-        { id: 4, name: 'Debreceni VSC' },
-        { id: 5, name: 'Budapest Honvéd FC' },
-        { id: 6, name: 'Szombathelyi Haladás' },
-        { id: 7, name: 'Paksi FC' },
-        { id: 8, name: 'Mezőkövesd Zsóry FC' },
-        { id: 9, name: 'Diósgyőri VTK' },
-        { id: 10, name: 'Újpest FC' },
-        { id: 11, name: 'Balmazújváros FC' },
-        { id: 12, name: 'Videoton FC' }
+    const initialPlayers = [
+        { id: 1, name: 'Haris Attila', number: 18 },
+        { id: 2, name: 'Németh Márió', number: 31 },
+        { id: 3, name: 'Jovanovic Aleksandar', number: 77 },
+        { id: 4, name: 'Kuti Krisztián', number: 14 },
+        { id: 5, name: 'Diallo Ulysse', number: 9 },
+        { id: 6, name: 'Balogh Balázs', number: 12 },
+        { id: 7, name: 'Molnár Gábor', number: 33 },
+        { id: 8, name: 'Báló Tamás', number: 7 },
+        { id: 9, name: 'Pátkai Máté', number: 17 },
+        { id: 10, name: 'Iszlai Bence', number: 10 }
     ];
 
-    const [clubs, setClubs] = React.useState(initialClubs);
+    const [players, setPlayers] = React.useState(initialPlayers);
     const [name, setName] = React.useState('');
+    const [number, setNumber] = React.useState('');
     const [editId, setEditId] = React.useState(null);
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        const trimmed = name.trim();
-        if (!trimmed) return;
+        const trimmedName = name.trim();
+        const numVal = parseInt(number, 10);
+
+        if (!trimmedName || isNaN(numVal)) return;
+
+        // Validáció: Név (Két szavas forma: Vezetéknév Keresztnév)
+        const nameParts = trimmedName.split(/\s+/);
+        if (nameParts.length !== 2) {
+            alert('Hibás formátum! A névnek pontosan két szóból kell állnia (Vezetéknév és Keresztnév szóközzel elválasztva).');
+            return;
+        }
+
+        // Validáció: Mezszám (0-99 közötti)
+        if (numVal < 0 || numVal > 99) {
+            alert('Hibás mezszám! Kérlek 0 és 99 közötti számot adj meg.');
+            return;
+        }
 
         if (editId) {
             // Update
-            setClubs(clubs.map(c => c.id === editId ? { ...c, name: trimmed } : c));
+            setPlayers(players.map(p => p.id === editId ? { ...p, name: trimmedName, number: numVal } : p));
             setEditId(null);
         } else {
             // Create
-            const maxId = clubs.length > 0 ? Math.max(...clubs.map(c => c.id)) : 0;
-            setClubs([...clubs, { id: maxId + 1, name: trimmed }]);
+            const maxId = players.length > 0 ? Math.max(...players.map(p => p.id)) : 0;
+            setPlayers([...players, { id: maxId + 1, name: trimmedName, number: numVal }]);
         }
         setName('');
+        setNumber('');
     };
 
-    const handleEdit = (club) => {
-        setName(club.name);
-        setEditId(club.id);
-        const input = document.getElementById('club-name');
+    const handleEdit = (player) => {
+        setName(player.name);
+        setNumber(player.number.toString());
+        setEditId(player.id);
+        const input = document.getElementById('player-name');
         if (input) input.focus();
     };
 
     const handleDelete = (id) => {
-        if (window.confirm('Biztosan törölni szeretnéd ezt a csapatot?')) {
-            setClubs(clubs.filter(c => c.id !== id));
+        if (window.confirm('Biztosan törölni szeretnéd ezt a játékost?')) {
+            setPlayers(players.filter(p => p.id !== id));
             if (editId === id) {
                 setName('');
+                setNumber('');
                 setEditId(null);
             }
         }
     };
 
     // Form element
-    const formElement = e('form', { className: 'crud-form', onSubmit: handleSubmit, id: 'crud-form' }, 
+    const formElement = e('form', { className: 'crud-form', onSubmit: handleSubmit, id: 'crud-form' },
         e('input', {
             type: 'text',
-            id: 'club-name',
-            placeholder: 'Csapatnév megadása (pl. Vasas FC)',
+            id: 'player-name',
+            placeholder: 'Vezetéknév Keresztnév',
             value: name,
+            pattern: '^[A-ZÁÉÍÓÖŐÚÜŰa-záéíóöőúüű\\-]+\\s[A-ZÁÉÍÓÖŐÚÜŰa-záéíóöőúüű\\-]+$',
+            title: 'Kérjük, pontosan két szót adjon meg (pl. Németh Márió)!',
             onChange: (evt) => setName(evt.target.value),
             autoComplete: 'off',
+            required: true
+        }),
+        e('input', {
+            type: 'number',
+            id: 'player-number',
+            placeholder: 'Mezszám (0-99)',
+            value: number,
+            min: 0,
+            max: 99,
+            onChange: (evt) => setNumber(evt.target.value),
+            style: { minWidth: '90px', flex: '0.5' },
             required: true
         }),
         e('button', { type: 'submit' }, editId ? 'Mentés' : 'Hozzáadás')
     );
 
     // Table elements
-    const tableRows = clubs.length === 0 
-        ? e('tr', null, e('td', { colSpan: 3, style: { textAlign: 'center', padding: '2rem' } }, 'Nincs megjeleníthető csapat.'))
-        : clubs.map(club => {
-            return e('tr', { key: club.id },
-                e('td', null, club.id),
-                e('td', null, club.name),
+    const tableRows = players.length === 0
+        ? e('tr', null, e('td', { colSpan: 4, style: { textAlign: 'center', padding: '2rem' } }, 'Nincs megjeleníthető játékos.'))
+        : players.map(player => {
+            return e('tr', { key: player.id },
+                e('td', null, player.id),
+                e('td', null, player.name),
+                e('td', null, player.number),
                 e('td', { className: 'actions', style: { textAlign: 'right', justifyContent: 'flex-end' } },
-                    e('button', { className: 'btn-edit', onClick: () => handleEdit(club) }, 'Módosítás'),
-                    e('button', { className: 'btn-danger', onClick: () => handleDelete(club.id) }, 'Törlés')
+                    e('button', { className: 'btn-edit', onClick: () => handleEdit(player) }, 'Módosítás'),
+                    e('button', { className: 'btn-danger', onClick: () => handleDelete(player.id) }, 'Törlés')
                 )
             );
         });
 
     const tableBody = e('tbody', null, tableRows);
 
-    const tableHead = e('thead', null, 
-        e('tr', null, 
+    const tableHead = e('thead', null,
+        e('tr', null,
             e('th', { style: { width: '10%' } }, 'ID'),
-            e('th', null, 'Csapatnév'),
+            e('th', null, 'Játékos Név'),
+            e('th', { style: { width: '15%' } }, 'Mezszám'),
             e('th', { style: { width: '20%', textAlign: 'right' } }, 'Műveletek')
         )
     );
 
     const tableContainer = e('div', { className: 'table-container' },
-        e('table', { id: 'clubs-table' }, tableHead, tableBody)
+        e('table', { id: 'players-table' }, tableHead, tableBody)
     );
 
     // Return everything inside a React Fragment wrapper
